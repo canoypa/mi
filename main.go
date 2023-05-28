@@ -104,7 +104,7 @@ Flags:
 
       --no-mentions    Do not expand mentions from text
       --no-hashtags    Do not expand hashtags from text
-      --no-emoji       Do not expand emojis from text
+      --no-emojis       Do not expand emojis from text
 
       --init           Set the host and access token
 
