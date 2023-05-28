@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
@@ -24,6 +26,22 @@ var (
 
 	flagInit bool
 )
+
+func getRandomPlaceholder() string {
+	words := []string{
+		"What are you up to",
+		"What's happening around you",
+		"What's on your mind",
+		"What do you want to say",
+		"Start writing...",
+		"Waiting for you to write...",
+	}
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := r.Intn(len(words))
+
+	return words[num]
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "mi <text> [flags]",
