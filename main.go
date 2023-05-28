@@ -101,19 +101,15 @@ func post(text string) {
 		Text: text,
 	}
 
-	visibility := ""
 	if flagDirect != "" {
-		visibility = "specified"
-	} else if flagFollowers {
-		visibility = "followers"
-	} else if flagTimeline {
-		visibility = "home"
-	}
-	requestBody.Visibility = visibility
+		requestBody.Visibility = "specified"
 
-	if flagDirect != "" {
 		visibleUserIds := strings.Split(flagDirect, ",")
 		requestBody.VisibleUserIds = visibleUserIds
+	} else if flagFollowers {
+		requestBody.Visibility = "followers"
+	} else if flagTimeline {
+		requestBody.Visibility = "home"
 	}
 
 	// TODO: フラグのみのときに動作しない
