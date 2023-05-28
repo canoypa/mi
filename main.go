@@ -5,8 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+var (
+	flagInit bool
 )
 
 var rootCmd = &cobra.Command{
@@ -14,8 +19,40 @@ var rootCmd = &cobra.Command{
 	Short: "Misskey CLI",
 	Long:  "CLI tool for sending Misskey notes.",
 	Run: func(cmd *cobra.Command, args []string) {
-		println("Run")
+		if flagInit {
+			initialize(cmd)
+			os.Exit(0)
+		}
+
+		hostname := viper.GetString("hostname")
+		token := viper.GetString("token")
+
+		if hostname == "" || token == "" {
+			fmt.Println("It seems like it's being executed for the first time.")
+			confirmInitialize := utils.Confirm("Would you like to set the host and access token?:", true)
+
+			if confirmInitialize {
+				initialize(cmd)
+				os.Exit(0)
+			}
+		}
 	},
+}
+
+func initialize(cmd *cobra.Command) {
+	fmt.Println("Enter the hostname you wish to use. For example, \"misskey.io\".")
+	hostname := utils.Input("Hostname:")
+	fmt.Println("Enter the access token. \"Compose and delete notes\" permission is required.")
+	token := utils.Input("Access Token:")
+
+	viper.Set("hostname", hostname)
+	viper.Set("token", token)
+
+	if err := viper.WriteConfig(); err != nil {
+		cobra.CheckErr(err)
+	}
+
+	fmt.Println("Initialization has been completed!")
 }
 
 func initConfig() {
@@ -67,6 +104,8 @@ Examples:
   $ mi It's nsfw! --cw Read?
   $ mi Hello Misskey! --direct @misskey,@example.com@misskey
 `)
+
+	rootCmd.PersistentFlags().BoolVar(&flagInit, "init", false, "Set the host and access token")
 }
 
 func main() {
