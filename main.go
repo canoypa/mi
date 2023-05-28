@@ -1,16 +1,31 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+type RequestBody struct {
+	I                 string   `json:"i"`
+	Visibility        string   `json:"visibility,omitempty"`
+	VisibleUserIds    []string `json:"visibleUserIds,omitempty"`
+	Text              string   `json:"text"`
+	Cw                string   `json:"cw,omitempty"`
+	NoExtractMentions bool     `json:"noExtractMentions,omitempty"`
+	NoExtractHashtags bool     `json:"noExtractHashtags,omitempty"`
+	NoExtractEmojis   bool     `json:"noExtractEmojis,omitempty"`
+}
 
 var (
 	flagPublic    bool
@@ -65,7 +80,69 @@ var rootCmd = &cobra.Command{
 				os.Exit(0)
 			}
 		}
+
+		text := ""
+		if len(args) == 0 {
+			text = utils.Multiline(getRandomPlaceholder())
+		} else {
+			text = args[0]
+		}
+
+		post(text)
 	},
+}
+
+func post(text string) {
+	hostname := viper.GetString("hostname")
+	token := viper.GetString("token")
+
+	requestBody := RequestBody{
+		I:    token,
+		Text: text,
+	}
+
+	visibility := ""
+	if flagDirect != "" {
+		visibility = "specified"
+	} else if flagFollowers {
+		visibility = "followers"
+	} else if flagTimeline {
+		visibility = "home"
+	}
+	requestBody.Visibility = visibility
+
+	if flagDirect != "" {
+		visibleUserIds := strings.Split(flagDirect, ",")
+		requestBody.VisibleUserIds = visibleUserIds
+	}
+
+	// TODO: フラグのみのときに動作しない
+	if flagCw != "" {
+		requestBody.Cw = flagCw
+	}
+
+	if flagNoMentions {
+		requestBody.NoExtractMentions = true
+	}
+	if flagNoHashtags {
+		requestBody.NoExtractHashtags = true
+	}
+	if flagNoEmoji {
+		requestBody.NoExtractEmojis = true
+	}
+
+	url := url.URL{
+		Scheme: "https",
+		Host:   hostname,
+		Path:   "api/notes/create",
+	}
+
+	bodyStr, err := json.Marshal(requestBody)
+	if err != nil {
+		cobra.CheckErr(err)
+	}
+
+	fmt.Println(url.String(), bytes.NewBuffer(bodyStr))
 }
 
 func initialize(cmd *cobra.Command) {
