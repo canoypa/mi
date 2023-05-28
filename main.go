@@ -100,8 +100,6 @@ Flags:
   -d, --direct string  Publish Note to specified users
       --cw string      Set contents warning
 
-  -i, --interactive    Provides an easy way to publish Note
-
       --no-mentions    Do not expand mentions from text
       --no-hashtags    Do not expand hashtags from text
       --no-emojis       Do not expand emojis from text
