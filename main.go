@@ -11,6 +11,17 @@ import (
 )
 
 var (
+	flagPublic    bool
+	flagTimeline  bool
+	flagFollowers bool
+	flagDirect    string
+
+	flagCw string
+
+	flagNoMentions bool
+	flagNoHashtags bool
+	flagNoEmoji    bool
+
 	flagInit bool
 )
 
@@ -104,6 +115,18 @@ Examples:
   $ mi It's nsfw! --cw Read?
   $ mi Hello Misskey! --direct @misskey,@example.com@misskey
 `)
+
+	rootCmd.PersistentFlags().BoolVarP(&flagPublic, "public", "p", true, "Publish Note to all users (default)")
+	rootCmd.PersistentFlags().BoolVarP(&flagTimeline, "timeline", "t", false, "Publish Note to home timeline")
+	rootCmd.PersistentFlags().BoolVarP(&flagFollowers, "followers", "f", false, "Publish Note to followers")
+	rootCmd.PersistentFlags().StringVarP(&flagDirect, "direct", "d", "", "Publish Note to specified users")
+	rootCmd.MarkFlagsMutuallyExclusive("public", "timeline", "followers", "direct")
+
+	rootCmd.PersistentFlags().StringVar(&flagCw, "cw", "", "Set contents warning")
+
+	rootCmd.PersistentFlags().BoolVar(&flagNoMentions, "no-mentions", false, "Do not expand mentions from text")
+	rootCmd.PersistentFlags().BoolVar(&flagNoHashtags, "no-hashtags", false, "Do not expand hashtags from text")
+	rootCmd.PersistentFlags().BoolVar(&flagNoEmoji, "no-emojis", false, "Do not expand emojis from text")
 
 	rootCmd.PersistentFlags().BoolVar(&flagInit, "init", false, "Set the host and access token")
 }
