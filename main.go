@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,14 +19,25 @@ import (
 )
 
 type RequestBody struct {
-	I                 string   `json:"i"`
-	Visibility        string   `json:"visibility,omitempty"`
-	VisibleUserIds    []string `json:"visibleUserIds,omitempty"`
-	Text              string   `json:"text"`
-	Cw                string   `json:"cw,omitempty"`
-	NoExtractMentions bool     `json:"noExtractMentions,omitempty"`
-	NoExtractHashtags bool     `json:"noExtractHashtags,omitempty"`
-	NoExtractEmojis   bool     `json:"noExtractEmojis,omitempty"`
+	I              string   `json:"i"`
+	Text           string   `json:"text"`
+	Visibility     string   `json:"visibility,omitempty"`
+	VisibleUserIds []string `json:"visibleUserIds,omitempty"`
+	Cw             string   `json:"cw,omitempty"`
+	LocalOnly      bool     `json:"localOnly,omitempty"`
+}
+
+type Note struct {
+	Id        string
+	CreatedAt string
+	Text      string
+	Cw        string
+	// User
+	UserId     string
+	Visibility string
+}
+type CreateResponse struct {
+	CreatedNote Note
 }
 
 var (
@@ -33,11 +46,8 @@ var (
 	flagFollowers bool
 	flagDirect    string
 
-	flagCw string
-
-	flagNoMentions bool
-	flagNoHashtags bool
-	flagNoEmoji    bool
+	flagLocalOnly bool
+	flagCw        string
 
 	flagInit bool
 )
@@ -70,10 +80,9 @@ var rootCmd = &cobra.Command{
 
 		hostname := viper.GetString("hostname")
 		token := viper.GetString("token")
-
 		if hostname == "" || token == "" {
 			fmt.Println("It seems like it's being executed for the first time.")
-			confirmInitialize := utils.Confirm("Would you like to set the host and access token?:", true)
+			confirmInitialize := utils.Confirm("Would you like to set the hostname and access token?:", true)
 
 			if confirmInitialize {
 				initialize(cmd)
@@ -87,7 +96,6 @@ var rootCmd = &cobra.Command{
 		} else {
 			text = args[0]
 		}
-
 		post(text)
 	},
 }
@@ -112,19 +120,12 @@ func post(text string) {
 		requestBody.Visibility = "home"
 	}
 
-	// TODO: フラグのみのときに動作しない
 	if flagCw != "" {
 		requestBody.Cw = flagCw
 	}
 
-	if flagNoMentions {
-		requestBody.NoExtractMentions = true
-	}
-	if flagNoHashtags {
-		requestBody.NoExtractHashtags = true
-	}
-	if flagNoEmoji {
-		requestBody.NoExtractEmojis = true
+	if flagLocalOnly {
+		requestBody.LocalOnly = true
 	}
 
 	url := url.URL{
@@ -133,12 +134,31 @@ func post(text string) {
 		Path:   "api/notes/create",
 	}
 
-	bodyStr, err := json.Marshal(requestBody)
-	if err != nil {
-		cobra.CheckErr(err)
+	bodyJson, err := json.Marshal(requestBody)
+	cobra.CheckErr(err)
+
+	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(bodyJson))
+	cobra.CheckErr(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	cobra.CheckErr(err)
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		fmt.Println("Unknown error!")
+		os.Exit(1)
 	}
 
-	fmt.Println(url.String(), bytes.NewBuffer(bodyStr))
+	b, err := io.ReadAll(res.Body)
+	cobra.CheckErr(err)
+
+	var response CreateResponse
+	err = json.Unmarshal(b, &response)
+	cobra.CheckErr(err)
+
+	fmt.Println("Your note was sent: " + "https://" + hostname + "/notes/" + response.CreatedNote.Id)
 }
 
 func initialize(cmd *cobra.Command) {
@@ -150,9 +170,8 @@ func initialize(cmd *cobra.Command) {
 	viper.Set("hostname", hostname)
 	viper.Set("token", token)
 
-	if err := viper.WriteConfig(); err != nil {
-		cobra.CheckErr(err)
-	}
+	err := viper.WriteConfig()
+	cobra.CheckErr(err)
 
 	fmt.Println("Initialization has been completed!")
 }
@@ -179,30 +198,28 @@ func initConfig() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.SetHelpTemplate(`CLI tool for sending Misskey notes.
+	rootCmd.SetHelpTemplate(`CLI tool for sending Misskey note.
 
 Usage:
   mi <text> [flags]
 
 Flags:
   -p, --public         Publish Note to all users (default)
-  -t, --timeline       Publish Note to home timeline
+  -h, --home           Publish Note to home timeline
   -f, --followers      Publish Note to followers
   -d, --direct string  Publish Note to specified users
+      --local-only     Only sent note to local
       --cw string      Set contents warning
-
-      --no-mentions    Do not expand mentions from text
-      --no-hashtags    Do not expand hashtags from text
-      --no-emojis       Do not expand emojis from text
 
       --init           Set the host and access token
 
-  -h, --help           help for mi
+  -h, --help           Help for mi
 
 Examples:
   $ mi Hello world!
   $ mi It's nsfw! --cw Read?
-  $ mi Hello Misskey! --direct @misskey,@example.com@misskey
+  $ mi Hello Misskey! --direct "@misskey,@misskey@example.com"
+  $ mi --set visibility=public --set local-only=true
 `)
 
 	rootCmd.PersistentFlags().BoolVarP(&flagPublic, "public", "p", true, "Publish Note to all users (default)")
@@ -211,11 +228,8 @@ Examples:
 	rootCmd.PersistentFlags().StringVarP(&flagDirect, "direct", "d", "", "Publish Note to specified users")
 	rootCmd.MarkFlagsMutuallyExclusive("public", "timeline", "followers", "direct")
 
+	rootCmd.PersistentFlags().BoolVar(&flagLocalOnly, "local-only", false, "Do not expand mentions from text")
 	rootCmd.PersistentFlags().StringVar(&flagCw, "cw", "", "Set contents warning")
-
-	rootCmd.PersistentFlags().BoolVar(&flagNoMentions, "no-mentions", false, "Do not expand mentions from text")
-	rootCmd.PersistentFlags().BoolVar(&flagNoHashtags, "no-hashtags", false, "Do not expand hashtags from text")
-	rootCmd.PersistentFlags().BoolVar(&flagNoEmoji, "no-emojis", false, "Do not expand emojis from text")
 
 	rootCmd.PersistentFlags().BoolVar(&flagInit, "init", false, "Set the host and access token")
 }
