@@ -96,7 +96,11 @@ var rootCmd = &cobra.Command{
 		} else {
 			text = args[0]
 		}
-		post(text)
+
+		// 空でなければ投稿
+		if len(text) > 0 {
+			post(text)
+		}
 	},
 }
 
@@ -236,7 +240,7 @@ Examples:
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
