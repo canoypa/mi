@@ -21,7 +21,7 @@ import (
 type RequestBody struct {
 	I              string   `json:"i"`
 	Text           string   `json:"text"`
-	Visibility     string   `json:"visibility,omitempty"`
+	Visibility     string   `json:"visibility,omitempty"` // public, home, followers, specified
 	VisibleUserIds []string `json:"visibleUserIds,omitempty"`
 	Cw             string   `json:"cw,omitempty"`
 	LocalOnly      bool     `json:"localOnly,omitempty"`
@@ -41,10 +41,10 @@ type CreateResponse struct {
 }
 
 var (
-	flagPublic    bool
-	flagTimeline  bool
-	flagFollowers bool
-	flagDirect    string
+	flagPublic       bool
+	flagHomeTimeline bool
+	flagFollowers    bool
+	flagDirect       []string
 
 	flagLocalOnly bool
 	flagCw        string
@@ -78,15 +78,15 @@ var rootCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		hostname := viper.GetString("hostname")
-		token := viper.GetString("token")
+		hostname := viper.GetString("default.hostname")
+		token := viper.GetString("default.token")
 		if hostname == "" || token == "" {
 			fmt.Println("It seems like it's being executed for the first time.")
-			confirmInitialize := utils.Confirm("Would you like to set the hostname and access token?:", true)
+			fmt.Println("To use this tool, you must set the hostname and access token.")
+			confirmInitialize := utils.Confirm("Would you like to set it now?", true)
 
 			if confirmInitialize {
 				initialize(cmd)
-				os.Exit(0)
 			}
 		}
 
@@ -94,7 +94,7 @@ var rootCmd = &cobra.Command{
 		if len(args) == 0 {
 			text = utils.Multiline(getRandomPlaceholder())
 		} else {
-			text = args[0]
+			text = strings.Join(args, " ")
 		}
 
 		// 空でなければ投稿
@@ -105,22 +105,20 @@ var rootCmd = &cobra.Command{
 }
 
 func post(text string) {
-	hostname := viper.GetString("hostname")
-	token := viper.GetString("token")
+	hostname := viper.GetString("default.hostname")
+	token := viper.GetString("default.token")
 
 	requestBody := RequestBody{
 		I:    token,
 		Text: text,
 	}
 
-	if flagDirect != "" {
+	if len(flagDirect) > 0 {
 		requestBody.Visibility = "specified"
-
-		visibleUserIds := strings.Split(flagDirect, ",")
-		requestBody.VisibleUserIds = visibleUserIds
+		requestBody.VisibleUserIds = flagDirect
 	} else if flagFollowers {
 		requestBody.Visibility = "followers"
-	} else if flagTimeline {
+	} else if flagHomeTimeline {
 		requestBody.Visibility = "home"
 	}
 
@@ -171,8 +169,8 @@ func initialize(cmd *cobra.Command) {
 	fmt.Println("Enter the access token. \"Compose and delete notes\" permission is required.")
 	token := utils.Input("Access Token:")
 
-	viper.Set("hostname", hostname)
-	viper.Set("token", token)
+	viper.Set("default.hostname", hostname)
+	viper.Set("default.token", token)
 
 	err := viper.WriteConfig()
 	cobra.CheckErr(err)
@@ -209,11 +207,11 @@ Usage:
 
 Flags:
   -p, --public         Publish Note to all users (default)
-  -h, --home           Publish Note to home timeline
+  -t, --timeline       Publish Note to home timeline
   -f, --followers      Publish Note to followers
   -d, --direct string  Publish Note to specified users
-      --local-only     Only sent note to local
-      --cw string      Set contents warning
+  -l, --local-only     Only sent note to local
+  -w, --cw string      Set contents warning
 
       --init           Set the host and access token
 
@@ -222,18 +220,18 @@ Flags:
 Examples:
   $ mi Hello world!
   $ mi --cw Read? It's nsfw!
-  $ mi --direct "@misskey,@misskey@example.com" Hello Misskey!
+  $ mi --direct "misskey,misskey@example.com" Hello Misskey!
   $ mi --set visibility=public --set local-only=true
 `)
 
 	rootCmd.PersistentFlags().BoolVarP(&flagPublic, "public", "p", true, "Publish Note to all users (default)")
-	rootCmd.PersistentFlags().BoolVarP(&flagTimeline, "timeline", "t", false, "Publish Note to home timeline")
+	rootCmd.PersistentFlags().BoolVarP(&flagHomeTimeline, "timeline", "t", false, "Publish Note to home timeline")
 	rootCmd.PersistentFlags().BoolVarP(&flagFollowers, "followers", "f", false, "Publish Note to followers")
-	rootCmd.PersistentFlags().StringVarP(&flagDirect, "direct", "d", "", "Publish Note to specified users")
+	rootCmd.PersistentFlags().StringSliceVarP(&flagDirect, "direct", "d", []string{}, "Publish Note to specified users")
 	rootCmd.MarkFlagsMutuallyExclusive("public", "timeline", "followers", "direct")
 
-	rootCmd.PersistentFlags().BoolVar(&flagLocalOnly, "local-only", false, "Do not expand mentions from text")
-	rootCmd.PersistentFlags().StringVar(&flagCw, "cw", "", "Set contents warning")
+	rootCmd.PersistentFlags().BoolVarP(&flagLocalOnly, "local-only", "l", false, "Publish Note only to local")
+	rootCmd.PersistentFlags().StringVarP(&flagCw, "cw", "w", "", "Set contents warning")
 
 	rootCmd.PersistentFlags().BoolVar(&flagInit, "init", false, "Set the host and access token")
 }
