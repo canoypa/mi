@@ -85,9 +85,11 @@ var rootCmd = &cobra.Command{
 			fmt.Println("To use this tool, you must set the hostname and access token.")
 			confirmInitialize := utils.Confirm("Would you like to set it now?", true)
 
-			if confirmInitialize {
-				initialize(cmd)
+			if !confirmInitialize {
+				os.Exit(0)
 			}
+
+			initialize(cmd)
 		}
 
 		text := ""
