@@ -221,8 +221,8 @@ Flags:
 
 Examples:
   $ mi Hello world!
-  $ mi It's nsfw! --cw Read?
-  $ mi Hello Misskey! --direct "@misskey,@misskey@example.com"
+  $ mi --cw Read? It's nsfw!
+  $ mi --direct "@misskey,@misskey@example.com" Hello Misskey!
   $ mi --set visibility=public --set local-only=true
 `)
 
