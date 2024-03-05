@@ -35,3 +35,15 @@ func Multiline(Message string) string {
 
 	return result
 }
+
+func Select(Message string, Options []string) string {
+	result := ""
+
+	prompt := &survey.Select{
+		Message: Message,
+		Options: Options,
+	}
+	survey.AskOne(prompt, &result)
+
+	return result
+}

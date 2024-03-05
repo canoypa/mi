@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/canoypa/mi/auth"
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -165,11 +166,41 @@ func post(text string) {
 	fmt.Println("Your note was sent: " + "https://" + hostname + "/notes/" + response.CreatedNote.Id)
 }
 
+func miAuth(hostname string) string {
+	sessionId := auth.NewSessionId()
+	authConfig := auth.AuthConfig{
+		Name:        "mi",
+		Permissions: []string{"write:notes"},
+	}
+
+	authUrl := auth.NewAuthUrl(hostname, sessionId, authConfig)
+
+	fmt.Println("Please access the following URL and authenticate.")
+	fmt.Println(authUrl.String())
+
+	utils.OpenUrl(authUrl)
+	utils.Input("Press Enter after authentication.") // only for waiting
+
+	res, err := auth.FetchToken(hostname, sessionId)
+	cobra.CheckErr(err)
+
+	return res.Token
+}
+
 func initialize(cmd *cobra.Command) {
 	fmt.Println("Enter the hostname you wish to use. For example, \"misskey.io\".")
 	hostname := utils.Input("Hostname:")
-	fmt.Println("Enter the access token. \"Compose and delete notes\" permission is required.")
-	token := utils.Input("Access Token:")
+
+	fmt.Println("Chose the authentication method.")
+	authMethod := utils.Select("Authentication method:", []string{"MiAuth", "Access Token"})
+
+	var token string
+	if authMethod == "MiAuth" {
+		token = miAuth(hostname)
+	} else if authMethod == "Access Token" {
+		fmt.Println("Enter the access token. \"Compose and delete notes\" permission is required.")
+		token = utils.Input("Access Token:")
+	}
 
 	viper.Set("default.hostname", hostname)
 	viper.Set("default.token", token)
