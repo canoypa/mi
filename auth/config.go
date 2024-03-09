@@ -16,10 +16,10 @@ func NewSessionId() string {
 }
 
 type AuthConfig struct {
-	Name        string
-	Icon        string
-	Callback    string
-	Permissions []string
+	Name       string
+	Icon       string
+	Callback   string
+	Permission []string
 }
 
 func NewAuthUrl(host, sessionId string, config AuthConfig) url.URL {
@@ -39,8 +39,8 @@ func NewAuthUrl(host, sessionId string, config AuthConfig) url.URL {
 	if config.Callback != "" {
 		q.Set("callback", config.Callback)
 	}
-	if len(config.Permissions) > 0 {
-		q.Set("permissions", strings.Join(config.Permissions, ","))
+	if len(config.Permission) > 0 {
+		q.Set("permission", strings.Join(config.Permission, ","))
 	}
 
 	url.RawQuery = q.Encode()

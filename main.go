@@ -169,8 +169,8 @@ func post(text string) {
 func miAuth(hostname string) string {
 	sessionId := auth.NewSessionId()
 	authConfig := auth.AuthConfig{
-		Name:        "mi",
-		Permissions: []string{"write:notes"},
+		Name:       "mi",
+		Permission: []string{"write:notes"},
 	}
 
 	authUrl := auth.NewAuthUrl(hostname, sessionId, authConfig)
