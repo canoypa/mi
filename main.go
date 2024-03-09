@@ -1,45 +1,19 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/canoypa/mi/auth"
+	"github.com/canoypa/mi/misskey"
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type RequestBody struct {
-	I              string   `json:"i"`
-	Text           string   `json:"text"`
-	Visibility     string   `json:"visibility,omitempty"` // public, home, followers, specified
-	VisibleUserIds []string `json:"visibleUserIds,omitempty"`
-	Cw             string   `json:"cw,omitempty"`
-	LocalOnly      bool     `json:"localOnly,omitempty"`
-}
-
-type Note struct {
-	Id        string
-	CreatedAt string
-	Text      string
-	Cw        string
-	// User
-	UserId     string
-	Visibility string
-}
-type CreateResponse struct {
-	CreatedNote Note
-}
 
 var (
 	flagPublic       bool
@@ -111,7 +85,7 @@ func post(text string) {
 	hostname := viper.GetString("default.hostname")
 	token := viper.GetString("default.token")
 
-	requestBody := RequestBody{
+	requestBody := misskey.NotesCreateRequestBody{
 		I:    token,
 		Text: text,
 	}
@@ -133,37 +107,10 @@ func post(text string) {
 		requestBody.LocalOnly = true
 	}
 
-	url := url.URL{
-		Scheme: "https",
-		Host:   hostname,
-		Path:   "api/notes/create",
-	}
-
-	bodyJson, err := json.Marshal(requestBody)
+	res, err := misskey.NotesCreate(hostname, requestBody)
 	cobra.CheckErr(err)
 
-	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(bodyJson))
-	cobra.CheckErr(err)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	cobra.CheckErr(err)
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		fmt.Println("Unknown error!")
-		os.Exit(1)
-	}
-
-	b, err := io.ReadAll(res.Body)
-	cobra.CheckErr(err)
-
-	var response CreateResponse
-	err = json.Unmarshal(b, &response)
-	cobra.CheckErr(err)
-
-	fmt.Println("Your note was sent: " + "https://" + hostname + "/notes/" + response.CreatedNote.Id)
+	fmt.Println("Your note was sent: " + "https://" + hostname + "/notes/" + res.CreatedNote.Id)
 }
 
 func miAuth(hostname string) string {
