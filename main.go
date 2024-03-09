@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/canoypa/mi/auth"
 	"github.com/canoypa/mi/misskey"
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
@@ -114,13 +113,13 @@ func post(text string) {
 }
 
 func miAuth(hostname string) string {
-	sessionId := auth.NewSessionId()
-	authConfig := auth.AuthConfig{
+	sessionId := misskey.NewSessionId()
+	authConfig := misskey.MiAuthConfig{
 		Name:       "mi",
 		Permission: []string{"write:notes"},
 	}
 
-	authUrl := auth.NewAuthUrl(hostname, sessionId, authConfig)
+	authUrl := misskey.NewMiAuthUrl(hostname, sessionId, authConfig)
 
 	fmt.Println("Please access the following URL and authenticate.")
 	fmt.Println(authUrl.String())
@@ -128,7 +127,7 @@ func miAuth(hostname string) string {
 	utils.OpenUrl(authUrl)
 	utils.Input("Press Enter after authentication.") // only for waiting
 
-	res, err := auth.FetchToken(hostname, sessionId)
+	res, err := misskey.MiAuthCheck(hostname, sessionId)
 	cobra.CheckErr(err)
 
 	return res.Token

@@ -1,4 +1,4 @@
-package auth
+package misskey
 
 import (
 	"encoding/json"
@@ -15,14 +15,7 @@ func NewSessionId() string {
 	return uuid.New().String()
 }
 
-type AuthConfig struct {
-	Name       string
-	Icon       string
-	Callback   string
-	Permission []string
-}
-
-func NewAuthUrl(host, sessionId string, config AuthConfig) url.URL {
+func NewMiAuthUrl(host, sessionId string, config MiAuthConfig) url.URL {
 	url := url.URL{
 		Scheme: "https",
 		Host:   host,
@@ -48,11 +41,7 @@ func NewAuthUrl(host, sessionId string, config AuthConfig) url.URL {
 	return url
 }
 
-type TokenResponse struct {
-	Token string `json:"token"`
-}
-
-func FetchToken(host, sessionId string) (TokenResponse, error) {
+func MiAuthCheck(host, sessionId string) (MiAuthCheckResponse, error) {
 	url := url.URL{
 		Scheme: "https",
 		Host:   host,
@@ -69,19 +58,19 @@ func FetchToken(host, sessionId string) (TokenResponse, error) {
 
 	res, err := http.DefaultClient.Do(&req)
 	if err != nil {
-		return TokenResponse{}, err
+		return MiAuthCheckResponse{}, err
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return TokenResponse{}, err
+		return MiAuthCheckResponse{}, err
 	}
 
-	var tokenResponse TokenResponse
+	var tokenResponse MiAuthCheckResponse
 	err = json.Unmarshal(body, &tokenResponse)
 	if err != nil {
-		return TokenResponse{}, err
+		return MiAuthCheckResponse{}, err
 	}
 
 	return tokenResponse, nil

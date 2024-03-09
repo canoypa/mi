@@ -1,5 +1,16 @@
 package misskey
 
+type MiAuthConfig struct {
+	Name       string
+	Icon       string
+	Callback   string
+	Permission []string
+}
+
+type MiAuthCheckResponse struct {
+	Token string `json:"token"`
+}
+
 type Note struct {
 	Id        string
 	CreatedAt string
