@@ -28,7 +28,7 @@ func init() {
 func miAuth(hostname string) string {
 	sessionId := misskey.NewSessionId()
 	authConfig := misskey.MiAuthConfig{
-		Name:       "mi",
+		Name:       "Misskey CLI",
 		Permission: []string{"write:notes"},
 	}
 
