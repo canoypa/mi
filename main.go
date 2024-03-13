@@ -8,22 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/canoypa/mi/core/flags"
 	"github.com/canoypa/mi/misskey"
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	flagPublic       bool
-	flagHomeTimeline bool
-	flagFollowers    bool
-	flagDirect       []string
-
-	flagLocalOnly bool
-	flagCw        string
-
-	flagInit bool
 )
 
 func getRandomPlaceholder() string {
@@ -47,7 +36,7 @@ var rootCmd = &cobra.Command{
 	Short: "Misskey CLI",
 	Long:  "CLI tool for sending Misskey notes.",
 	Run: func(cmd *cobra.Command, args []string) {
-		if flagInit {
+		if flags.FlagInit {
 			initialize(cmd)
 			os.Exit(0)
 		}
@@ -89,20 +78,20 @@ func post(text string) {
 		Text: text,
 	}
 
-	if len(flagDirect) > 0 {
+	if len(flags.FlagDirect) > 0 {
 		requestBody.Visibility = "specified"
-		requestBody.VisibleUserIds = flagDirect
-	} else if flagFollowers {
+		requestBody.VisibleUserIds = flags.FlagDirect
+	} else if flags.FlagFollowers {
 		requestBody.Visibility = "followers"
-	} else if flagHomeTimeline {
+	} else if flags.FlagHomeTimeline {
 		requestBody.Visibility = "home"
 	}
 
-	if flagCw != "" {
-		requestBody.Cw = flagCw
+	if flags.FlagCw != "" {
+		requestBody.Cw = flags.FlagCw
 	}
 
-	if flagLocalOnly {
+	if flags.FlagLocalOnly {
 		requestBody.LocalOnly = true
 	}
 
@@ -203,16 +192,16 @@ Examples:
   $ mi --set visibility=public --set local-only=true
 `)
 
-	rootCmd.PersistentFlags().BoolVarP(&flagPublic, "public", "p", true, "Publish Note to all users (default)")
-	rootCmd.PersistentFlags().BoolVarP(&flagHomeTimeline, "timeline", "t", false, "Publish Note to home timeline")
-	rootCmd.PersistentFlags().BoolVarP(&flagFollowers, "followers", "f", false, "Publish Note to followers")
-	rootCmd.PersistentFlags().StringSliceVarP(&flagDirect, "direct", "d", []string{}, "Publish Note to specified users")
+	rootCmd.PersistentFlags().BoolVarP(&flags.FlagPublic, "public", "p", true, "Publish Note to all users (default)")
+	rootCmd.PersistentFlags().BoolVarP(&flags.FlagHomeTimeline, "timeline", "t", false, "Publish Note to home timeline")
+	rootCmd.PersistentFlags().BoolVarP(&flags.FlagFollowers, "followers", "f", false, "Publish Note to followers")
+	rootCmd.PersistentFlags().StringSliceVarP(&flags.FlagDirect, "direct", "d", []string{}, "Publish Note to specified users")
 	rootCmd.MarkFlagsMutuallyExclusive("public", "timeline", "followers", "direct")
 
-	rootCmd.PersistentFlags().BoolVarP(&flagLocalOnly, "local-only", "l", false, "Publish Note only to local")
-	rootCmd.PersistentFlags().StringVarP(&flagCw, "cw", "w", "", "Set contents warning")
+	rootCmd.PersistentFlags().BoolVarP(&flags.FlagLocalOnly, "local-only", "l", false, "Publish Note only to local")
+	rootCmd.PersistentFlags().StringVarP(&flags.FlagCw, "cw", "w", "", "Set contents warning")
 
-	rootCmd.PersistentFlags().BoolVar(&flagInit, "init", false, "Set the host and access token")
+	rootCmd.PersistentFlags().BoolVar(&flags.FlagInit, "init", false, "Set the host and access token")
 }
 
 func main() {
