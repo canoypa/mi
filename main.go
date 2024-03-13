@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/canoypa/mi/cmd/initialize"
 	"github.com/canoypa/mi/core/flags"
 	"github.com/canoypa/mi/misskey"
 	"github.com/canoypa/mi/utils"
@@ -37,7 +38,8 @@ var rootCmd = &cobra.Command{
 	Long:  "CLI tool for sending Misskey notes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if flags.FlagInit {
-			initialize(cmd)
+			err := initialize.Command.Execute()
+			cobra.CheckErr(err)
 			os.Exit(0)
 		}
 
@@ -52,7 +54,8 @@ var rootCmd = &cobra.Command{
 				os.Exit(0)
 			}
 
-			initialize(cmd)
+			err := initialize.Command.Execute()
+			cobra.CheckErr(err)
 		}
 
 		text := ""
@@ -99,51 +102,6 @@ func post(text string) {
 	cobra.CheckErr(err)
 
 	fmt.Println("Your note was sent: " + "https://" + hostname + "/notes/" + res.CreatedNote.Id)
-}
-
-func miAuth(hostname string) string {
-	sessionId := misskey.NewSessionId()
-	authConfig := misskey.MiAuthConfig{
-		Name:       "mi",
-		Permission: []string{"write:notes"},
-	}
-
-	authUrl := misskey.NewMiAuthUrl(hostname, sessionId, authConfig)
-
-	fmt.Println("Please access the following URL and authenticate.")
-	fmt.Println(authUrl.String())
-
-	utils.OpenUrl(authUrl)
-	utils.Input("Press Enter after authentication.") // only for waiting
-
-	res, err := misskey.MiAuthCheck(hostname, sessionId)
-	cobra.CheckErr(err)
-
-	return res.Token
-}
-
-func initialize(cmd *cobra.Command) {
-	fmt.Println("Enter the hostname you wish to use. For example, \"misskey.io\".")
-	hostname := utils.Input("Hostname:")
-
-	fmt.Println("Chose the authentication method.")
-	authMethod := utils.Select("Authentication method:", []string{"MiAuth", "Access Token"})
-
-	var token string
-	if authMethod == "MiAuth" {
-		token = miAuth(hostname)
-	} else if authMethod == "Access Token" {
-		fmt.Println("Enter the access token. \"Compose and delete notes\" permission is required.")
-		token = utils.Input("Access Token:")
-	}
-
-	viper.Set("default.hostname", hostname)
-	viper.Set("default.token", token)
-
-	err := viper.WriteConfig()
-	cobra.CheckErr(err)
-
-	fmt.Println("Initialization has been completed!")
 }
 
 func initConfig() {
@@ -201,7 +159,7 @@ Examples:
 	rootCmd.PersistentFlags().BoolVarP(&flags.FlagLocalOnly, "local-only", "l", false, "Publish Note only to local")
 	rootCmd.PersistentFlags().StringVarP(&flags.FlagCw, "cw", "w", "", "Set contents warning")
 
-	rootCmd.PersistentFlags().BoolVar(&flags.FlagInit, "init", false, "Set the host and access token")
+	initialize.InitFlags(rootCmd)
 }
 
 func main() {
