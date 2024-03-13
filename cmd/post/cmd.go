@@ -40,10 +40,12 @@ var Command = &cobra.Command{
 			text = strings.Join(args, " ")
 		}
 
-		// 空でなければ投稿
-		if len(text) > 0 {
-			post(text)
+		if text == "" {
+			fmt.Println("The note is empty.")
+			os.Exit(0)
 		}
+
+		post(text)
 	},
 }
 

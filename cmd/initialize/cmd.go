@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/canoypa/mi/core/flags"
 	"github.com/canoypa/mi/misskey"
@@ -48,6 +49,10 @@ func miAuth(hostname string) string {
 func initialize() {
 	fmt.Println("Enter the hostname you wish to use. For example, \"misskey.io\".")
 	hostname := utils.Input("Hostname:")
+	if hostname == "" {
+		fmt.Println("Please enter the hostname.")
+		os.Exit(0)
+	}
 
 	fmt.Println("Chose the authentication method.")
 	authMethod := utils.Select("Authentication method:", []string{"MiAuth", "Access Token"})
@@ -58,6 +63,11 @@ func initialize() {
 	} else if authMethod == "Access Token" {
 		fmt.Println("Enter the access token. \"Compose and delete notes\" permission is required.")
 		token = utils.Input("Access Token:")
+
+		if token == "" {
+			fmt.Println("Please enter the access token.")
+			os.Exit(0)
+		}
 	}
 
 	viper.Set("default.hostname", hostname)
