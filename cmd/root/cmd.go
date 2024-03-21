@@ -13,14 +13,14 @@ var Command = &cobra.Command{
 	Use:   "mi <text> [flags]",
 	Short: "Misskey CLI",
 	Long:  "CLI tool for sending Misskey notes.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(command *cobra.Command, args []string) {
 		if flags.FlagInit {
-			err := initialize.Command(cmd, args)
+			err := initialize.Command(command, args)
 			cobra.CheckErr(err)
 			os.Exit(0)
 		}
 
-		err := post.Command(cmd, args)
+		err := post.Command(command, args)
 		cobra.CheckErr(err)
 	},
 }
