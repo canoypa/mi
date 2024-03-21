@@ -13,6 +13,10 @@ var Command = &cobra.Command{
 	Use:   "mi <text> [flags]",
 	Short: "Misskey CLI",
 	Long:  "CLI tool for sending Misskey notes.",
+	Example: `$ mi Hello world!
+$ mi --cw Read? It's nsfw!
+$ mi --direct "misskey,misskey@example.com" Hello Misskey!
+$ mi --set visibility=public --set local-only=true`,
 	Run: func(command *cobra.Command, args []string) {
 		if flags.FlagInit {
 			err := initialize.Command(command, args)
@@ -26,30 +30,6 @@ var Command = &cobra.Command{
 }
 
 func init() {
-	Command.SetHelpTemplate(`CLI tool for sending Misskey note.
-
-	Usage:
-		mi <text> [flags]
-	
-	Flags:
-		-p, --public         Publish Note to all users (default)
-		-t, --timeline       Publish Note to home timeline
-		-f, --followers      Publish Note to followers
-		-d, --direct string  Publish Note to specified users
-		-l, --local-only     Only sent note to local
-		-w, --cw string      Set contents warning
-	
-				--init           Set the host and access token
-	
-		-h, --help           Help for mi
-	
-	Examples:
-		$ mi Hello world!
-		$ mi --cw Read? It's nsfw!
-		$ mi --direct "misskey,misskey@example.com" Hello Misskey!
-		$ mi --set visibility=public --set local-only=true
-	`)
-
 	// post command flags
 	Command.PersistentFlags().BoolVarP(&flags.FlagPublic, "public", "p", true, "Publish Note to all users (default)")
 	Command.PersistentFlags().BoolVarP(&flags.FlagHomeTimeline, "timeline", "t", false, "Publish Note to home timeline")
