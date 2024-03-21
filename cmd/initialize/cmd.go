@@ -4,25 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/canoypa/mi/core/flags"
 	"github.com/canoypa/mi/misskey"
 	"github.com/canoypa/mi/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var Command = &cobra.Command{
-	Run: func(command *cobra.Command, args []string) {
-		initialize()
-	},
-}
+func Command(command *cobra.Command, args []string) error {
+	initialize()
 
-func InitFlags(command *cobra.Command) {
-	command.PersistentFlags().BoolVar(&flags.FlagInit, "init", false, "Set the host and access token")
-}
-
-func init() {
-	InitFlags(Command)
+	return nil
 }
 
 func miAuth(hostname string) string {

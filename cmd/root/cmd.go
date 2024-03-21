@@ -15,12 +15,12 @@ var Command = &cobra.Command{
 	Long:  "CLI tool for sending Misskey notes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if flags.FlagInit {
-			err := initialize.Command.Execute()
+			err := initialize.Command(cmd, args)
 			cobra.CheckErr(err)
 			os.Exit(0)
 		}
 
-		err := post.Command.Execute()
+		err := post.Command(cmd, args)
 		cobra.CheckErr(err)
 	},
 }
@@ -50,6 +50,16 @@ func init() {
 		$ mi --set visibility=public --set local-only=true
 	`)
 
-	post.InitFlags(Command)
-	initialize.InitFlags(Command)
+	// post command flags
+	Command.PersistentFlags().BoolVarP(&flags.FlagPublic, "public", "p", true, "Publish Note to all users (default)")
+	Command.PersistentFlags().BoolVarP(&flags.FlagHomeTimeline, "timeline", "t", false, "Publish Note to home timeline")
+	Command.PersistentFlags().BoolVarP(&flags.FlagFollowers, "followers", "f", false, "Publish Note to followers")
+	Command.PersistentFlags().StringSliceVarP(&flags.FlagDirect, "direct", "d", []string{}, "Publish Note to specified users")
+	Command.MarkFlagsMutuallyExclusive("public", "timeline", "followers", "direct")
+
+	Command.PersistentFlags().BoolVarP(&flags.FlagLocalOnly, "local-only", "l", false, "Publish Note only to local")
+	Command.PersistentFlags().StringVarP(&flags.FlagCw, "cw", "w", "", "Set contents warning")
+
+	// initial command flags
+	Command.PersistentFlags().BoolVar(&flags.FlagInit, "init", false, "Set the host and access token")
 }

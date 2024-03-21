@@ -15,53 +15,38 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Command = &cobra.Command{
-	Run: func(command *cobra.Command, args []string) {
-		hostname := viper.GetString("default.hostname")
-		token := viper.GetString("default.token")
+func Command(command *cobra.Command, args []string) error {
+	hostname := viper.GetString("default.hostname")
+	token := viper.GetString("default.token")
 
-		if hostname == "" || token == "" {
-			fmt.Println("It seems like it's being executed for the first time.")
-			fmt.Println("To use this tool, you must set the hostname and access token.")
-			confirmInitialize := utils.Confirm("Would you like to set it now?", true)
+	if hostname == "" || token == "" {
+		fmt.Println("It seems like it's being executed for the first time.")
+		fmt.Println("To use this tool, you must set the hostname and access token.")
+		confirmInitialize := utils.Confirm("Would you like to set it now?", true)
 
-			if !confirmInitialize {
-				os.Exit(0)
-			}
-
-			err := initialize.Command.Execute()
-			cobra.CheckErr(err)
-		}
-
-		text := ""
-		if len(args) == 0 {
-			text = utils.Multiline(getRandomPlaceholder())
-		} else {
-			text = strings.Join(args, " ")
-		}
-
-		if text == "" {
-			fmt.Println("The note is empty.")
+		if !confirmInitialize {
 			os.Exit(0)
 		}
 
-		post(text)
-	},
-}
+		err := initialize.Command(command, args)
+		cobra.CheckErr(err)
+	}
 
-func InitFlags(command *cobra.Command) {
-	command.PersistentFlags().BoolVarP(&flags.FlagPublic, "public", "p", true, "Publish Note to all users (default)")
-	command.PersistentFlags().BoolVarP(&flags.FlagHomeTimeline, "timeline", "t", false, "Publish Note to home timeline")
-	command.PersistentFlags().BoolVarP(&flags.FlagFollowers, "followers", "f", false, "Publish Note to followers")
-	command.PersistentFlags().StringSliceVarP(&flags.FlagDirect, "direct", "d", []string{}, "Publish Note to specified users")
-	command.MarkFlagsMutuallyExclusive("public", "timeline", "followers", "direct")
+	text := ""
+	if len(args) == 0 {
+		text = utils.Multiline(getRandomPlaceholder())
+	} else {
+		text = strings.Join(args, " ")
+	}
 
-	command.PersistentFlags().BoolVarP(&flags.FlagLocalOnly, "local-only", "l", false, "Publish Note only to local")
-	command.PersistentFlags().StringVarP(&flags.FlagCw, "cw", "w", "", "Set contents warning")
-}
+	if text == "" {
+		fmt.Println("The note is empty.")
+		os.Exit(0)
+	}
 
-func init() {
-	InitFlags(Command)
+	post(text)
+
+	return nil
 }
 
 func getRandomPlaceholder() string {
